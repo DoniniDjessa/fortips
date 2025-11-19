@@ -61,6 +61,7 @@ export const dictionaries: Record<Lang, any> = {
       signOutDesc: "Se déconnecter",
       quickTips: "Aide rapide",
       quickTipsText: "Gardez un œil sur vos pronostics pour anticiper les validations.",
+      menu: "Menu",
     },
     common: {
       dashboard: "Tableau de bord des pronostics",
@@ -81,6 +82,7 @@ export const dictionaries: Record<Lang, any> = {
       needHelp: "Besoin d'aide ?",
       contactSupport: "Contactez le support pour mettre à jour d'autres informations de compte.",
       contactSupportLink: "Contacter le support",
+      close: "Fermer",
     },
     home: {
       overview: "Vue d'ensemble",
@@ -279,6 +281,7 @@ export const dictionaries: Record<Lang, any> = {
       signOutDesc: "Sign out",
       quickTips: "Quick tips",
       quickTipsText: "Keep an eye on your tips to anticipate upcoming validations.",
+      menu: "Menu",
     },
     common: {
       dashboard: "Predictions control center",
@@ -299,6 +302,7 @@ export const dictionaries: Record<Lang, any> = {
       needHelp: "Need help?",
       contactSupport: "Reach out to support if you need to update additional account information.",
       contactSupportLink: "Contact support",
+      close: "Close",
     },
     home: {
       overview: "Overview",

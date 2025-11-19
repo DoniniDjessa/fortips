@@ -11,12 +11,14 @@ import { useLang } from "@/lib/lang";
 import { t } from "@/app/i18n";
 import Loader from "@/app/components/loader";
 import Sidebar from "./sidebar";
+import { MobileMenuProvider, useMobileMenu } from "./mobile-menu-context";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const lang = useLang();
   const [ready, setReady] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const { setIsMobileMenuOpen } = useMobileMenu();
 
   useEffect(() => {
     (async () => {
@@ -41,6 +43,27 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         <div className="absolute right-[-18rem] top-1/3 h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,rgba(0,210,122,0.18),transparent_65%)] blur-[160px] opacity-80 dark:opacity-60" />
       </div>
       <Sidebar />
+      {/* Mobile Menu Button - Fixed to top-left */}
+      <button
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="md:hidden fixed left-4 top-4 z-50 inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/90 backdrop-blur-sm text-slate-500 shadow-sm transition hover:border-[var(--color-falcon-primary)] hover:text-[var(--color-falcon-primary)] dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200"
+        aria-label={t(lang, "nav.menu")}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5"
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
       <div className="relative z-10 flex min-w-0 flex-1 flex-col px-4 pb-10 pt-6 md:px-8 md:pb-8">
         <header className="falcon-nav mb-6">
           <div className="space-y-1">
@@ -111,6 +134,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <MobileMenuProvider>
+      <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+    </MobileMenuProvider>
   );
 }
 
