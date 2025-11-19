@@ -75,9 +75,13 @@ export default function PredictionsPage() {
 
   const loadPredictions = async () => {
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
       const { data, error } = await supabase
         .from("tip-predictions")
         .select("*")
+        .eq("user_id", userData.user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -86,6 +90,55 @@ export default function PredictionsPage() {
       toast.error(t(lang, "common.error"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const canDelete = (prediction: Prediction): boolean => {
+    const createdDate = new Date(prediction.created_at);
+    const now = new Date();
+    const daysDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysDiff > 2;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm(t(lang, "predictions.confirmDelete"))) return;
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error(t(lang, "common.error"));
+        return;
+      }
+
+      const res = await fetch("/api/predictions/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prediction_id: id, user_id: userData.user.id }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (errorData.error === "too_recent") {
+          toast.error(t(lang, "predictions.tooRecent"));
+        } else if (errorData.error === "cannot_delete_finalized") {
+          toast.error(t(lang, "predictions.cannotDeleteFinalized"));
+        } else {
+          throw new Error(errorData.error || "Failed to delete");
+        }
+        return;
+      }
+
+      toast.success(t(lang, "predictions.deleted"));
+      loadPredictions();
+      
+      // Trigger a refresh of the home feed if user is on home page
+      // This will be handled by the home page's useEffect
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("predictionDeleted"));
+      }
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast.error(t(lang, "common.error"));
     }
   };
 
@@ -146,6 +199,7 @@ export default function PredictionsPage() {
         <section className="falcon-grid">
           {predictions.map((p) => {
             const statusInfo = getStatusInfo(p.status, lang);
+            const isDeletable = canDelete(p);
             return (
               <article
                 key={p.id}
@@ -181,6 +235,19 @@ export default function PredictionsPage() {
                     <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
                       {formatDate(p.date)} · {p.time}
                     </p>
+                    {isDeletable && (
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="mt-2 inline-flex items-center justify-center rounded-lg bg-red-600 text-white px-2 py-1 text-[9px] font-semibold uppercase tracking-wide hover:opacity-90 transition"
+                        title={t(lang, "predictions.delete")}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
                 {p.details && (

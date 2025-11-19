@@ -163,6 +163,22 @@ export default function NewPredictionPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
+      // Check if user already has 2 predictions for this date
+      const { data: existingPredictions, error: countError } = await supabase
+        .from("tip-predictions")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("date", form.date);
+
+      if (countError) throw countError;
+
+      const predictionCount = existingPredictions?.length || 0;
+      if (predictionCount >= 2) {
+        toast.error(t(lang, "newPrediction.maxPredictionsReached"));
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("tip-predictions").insert({
         user_id: userData.user.id,
         sport: form.sport,

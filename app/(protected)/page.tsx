@@ -94,6 +94,19 @@ export default function ProtectedHome() {
     loadFeed();
   }, []);
 
+  // Listen for prediction deletion events to refresh feed
+  useEffect(() => {
+    const handlePredictionDeleted = () => {
+      loadFeed();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("predictionDeleted", handlePredictionDeleted);
+      return () => {
+        window.removeEventListener("predictionDeleted", handlePredictionDeleted);
+      };
+    }
+  }, []);
+
   const loadFeed = async () => {
     try {
       const now = new Date();
@@ -101,19 +114,12 @@ export default function ProtectedHome() {
       const yesterday = formatISODate(addDays(now, -1));
       const tomorrow = formatISODate(addDays(now, 1));
 
-      const { data: windowPreds, error: windowError } = await supabase
-        .from("tip-predictions")
-        .select(
-          `*,
-          tip_users:"tip-users"(id,pseudo,email,role,success_rate,total_predictions,avg_odds,exact_score_predictions)`
-        )
-        .gte("date", yesterday)
-        .lte("date", tomorrow)
-        .in("status", ["active", "waiting_result", "success", "failed", "exact_success"])
-        .order("date", { ascending: true })
-        .order("time", { ascending: true });
-
-      if (windowError) throw windowError;
+      // Fetch ALL active predictions from all users via API route (bypasses RLS)
+      const res = await fetch("/api/predictions/active");
+      if (!res.ok) {
+        throw new Error("Failed to fetch active predictions");
+      }
+      const { data: windowPreds } = await res.json();
 
       const grouped: Record<DayKey, Prediction[]> = {
         yesterday: [],
@@ -123,10 +129,24 @@ export default function ProtectedHome() {
 
       const mappedPredictions = (windowPreds as Prediction[] | null) ?? [];
 
+      // Group all active predictions by date
       mappedPredictions.forEach((prediction) => {
         const key = getDayKey(prediction.date, { yesterday, today, tomorrow });
         if (key) {
           grouped[key].push(prediction);
+        } else {
+          // If prediction is older than yesterday, add to yesterday
+          // If prediction is newer than tomorrow, add to tomorrow
+          const predDate = new Date(prediction.date);
+          const yesterdayDate = new Date(yesterday);
+          const tomorrowDate = new Date(tomorrow);
+          if (predDate < yesterdayDate) {
+            grouped.yesterday.push(prediction);
+          } else if (predDate > tomorrowDate) {
+            grouped.tomorrow.push(prediction);
+          } else {
+            grouped.today.push(prediction);
+          }
         }
       });
 
@@ -440,14 +460,6 @@ export default function ProtectedHome() {
             <span className="falcon-muted">{t(lang, "home.liveStream")}</span>
             <h2 className="falcon-title">{t(lang, "home.predictions")}</h2>
           </div>
-          <div className="inline-flex gap-2">
-            <Link href="/predictions" className="falcon-pill-link">
-              {t(lang, "home.viewAll")}
-            </Link>
-            <Link href="/stats" className="falcon-pill-link">
-              {t(lang, "home.stats")}
-            </Link>
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -485,12 +497,55 @@ export default function ProtectedHome() {
                 <article key={p.id} className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700/60 dark:bg-slate-900/60">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <Link
-                        href={`/user/${p.user_id}`}
-                        className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-falcon-primary)]"
-                      >
-                        @{userName}
-                      </Link>
+                      <div className="flex flex-col gap-0.5">
+                        <Link
+                          href={`/user/${p.user_id}`}
+                          className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-falcon-primary)]"
+                        >
+                          @{userName}
+                        </Link>
+                        {p.tip_users && (
+                          <div className="flex items-center gap-1.5 text-[9px] text-slate-500 dark:text-slate-400">
+                            {p.tip_users.success_rate !== null && p.tip_users.success_rate !== undefined ? (
+                              (() => {
+                                const rate = p.tip_users.success_rate;
+                                const totalPreds = p.tip_users.total_predictions || 0;
+                                let className = "font-medium";
+                                
+                                // If user hasn't made predictions yet (0.0% and no predictions), show default gray
+                                if (rate === 0 && totalPreds === 0) {
+                                  className = "text-slate-500 dark:text-slate-400";
+                                } else if (rate >= 80) {
+                                  // High success rate - green and bold
+                                  className = "font-bold text-green-600 dark:text-green-400";
+                                } else if (rate <= 20 && totalPreds > 0) {
+                                  // Low success rate (only if they have predictions) - red and bold
+                                  className = "font-bold text-red-600 dark:text-red-400";
+                                } else if (rate >= 45 && rate <= 55) {
+                                  // Medium range - gray
+                                  className = "text-slate-500 dark:text-slate-400";
+                                }
+                                
+                                return (
+                                  <span className={className}>
+                                    {rate.toFixed(1)}%
+                                  </span>
+                                );
+                              })()
+                            ) : null}
+                            {p.tip_users.total_predictions !== null && p.tip_users.total_predictions !== undefined ? (
+                              <span>
+                                {p.tip_users.total_predictions} {t(lang, "home.predictionCount")}
+                              </span>
+                            ) : null}
+                            {p.tip_users.avg_odds !== null && p.tip_users.avg_odds !== undefined ? (
+                              <span>
+                                {t(lang, "home.avgOddsLabel")} {p.tip_users.avg_odds.toFixed(2)}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
                       <span
                         className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${statusInfo.chip}`}
                       >

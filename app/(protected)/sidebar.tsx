@@ -24,6 +24,17 @@ export default function Sidebar() {
 
   const navItems = [
     {
+      href: "/",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+      label: t(lang, "nav.home"),
+      desc: t(lang, "nav.homeDesc"),
+    },
+    {
       href: "/predictions",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -281,7 +292,7 @@ export default function Sidebar() {
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-50 w-full overflow-hidden border-t border-slate-200/70 bg-white/90 backdrop-blur-lg dark:border-slate-700/60 dark:bg-slate-900/70">
         <div className="mx-auto flex h-12 w-full max-w-full items-center justify-around gap-2 px-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
             return (
               <Link
                 key={item.href}
@@ -296,21 +307,6 @@ export default function Sidebar() {
               </Link>
             );
           })}
-          <Link
-            href="/profile"
-            className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-              pathname === "/profile"
-                ? "border-[var(--color-falcon-primary)] bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)]"
-                : "border-transparent text-slate-500 dark:text-slate-300"
-            } transition`}
-          >
-            <span className="inline-flex h-[18px] w-[18px] items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </span>
-          </Link>
         </div>
       </nav>
     </>

@@ -23,6 +23,8 @@ type Prediction = {
   status: string;
   created_at: string;
   tip_users: { pseudo: string | null; email: string | null } | null;
+  sameDateCount?: number;
+  exceedsLimit?: boolean;
 };
 
 export default function AdminPendingPage() {
@@ -37,20 +39,56 @@ export default function AdminPendingPage() {
 
   const loadPredictions = async () => {
     try {
-      const { data, error } = await supabase
-        .from("tip-predictions")
-        .select(
-          `*,
-          tip_users:"tip-users"(pseudo,email)`
-        )
-        .eq("status", "pending_validation")
-        .order("created_at", { ascending: false });
+      // Get access code from session storage
+      const accessCode =
+        typeof window !== "undefined" ? window.sessionStorage.getItem(TPADMIN_ACCESS_CODE_STORAGE_KEY) : null;
 
-      if (error) throw error;
+      if (accessCode !== TPADMIN_ACCESS_CODE) {
+        toast.error(t(lang, "admin.invalidCode"));
+        setPredictions([]);
+        setLoading(false);
+        return;
+      }
 
-      setPredictions(data || []);
+      // Use API route with admin client to bypass RLS
+      const res = await fetch("/api/admin/pending-predictions", {
+        headers: {
+          "x-access-code": accessCode,
+        },
+      });
+
+      if (res.status === 403) {
+        toast.error(t(lang, "admin.accessDenied"));
+        setPredictions([]);
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch predictions");
+      }
+
+      const { data } = await res.json();
+      console.log("Loaded predictions from API:", data?.length || 0, data);
+      
+      // Calculate prediction counts per user per date to identify violations
+      const predictionsWithCounts = (data || []).map((p: Prediction) => {
+        // Count how many predictions this user has for this date (including this one)
+        const sameDateCount = (data || []).filter(
+          (other: Prediction) => other.user_id === p.user_id && other.date === p.date
+        ).length;
+        return {
+          ...p,
+          sameDateCount, // Number of predictions this user has for this date
+          exceedsLimit: sameDateCount > 2, // Flag if exceeds limit
+        };
+      });
+      
+      setPredictions(predictionsWithCounts);
     } catch (err: any) {
-      toast.error(t(lang, "common.error"));
+      console.error("Failed to load predictions:", err);
+      toast.error(t(lang, "common.error") + ": " + (err.message || String(err)));
+      setPredictions([]);
     } finally {
       setLoading(false);
     }
@@ -131,12 +169,23 @@ export default function AdminPendingPage() {
             return (
               <div
                 key={p.id}
-                className="bg-white dark:bg-slate-700 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-slate-600"
+                className={`bg-white dark:bg-slate-700 rounded-xl shadow-sm p-4 border ${
+                  p.exceedsLimit
+                    ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/20"
+                    : "border-gray-200 dark:border-slate-600"
+                }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">
-                      {t(lang, "user.userLabel")} <span className="font-medium">{userName}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                        {t(lang, "user.userLabel")} <span className="font-medium">{userName}</span>
+                      </div>
+                      {p.exceedsLimit && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-red-500 bg-red-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-red-700 dark:border-red-600 dark:bg-red-900/40 dark:text-red-300">
+                          ⚠️ {t(lang, "admin.exceedsLimit")} ({p.sameDateCount}/2)
+                        </span>
+                      )}
                     </div>
                     <div className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 mb-1">{p.match_name}</div>
                     <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400">
