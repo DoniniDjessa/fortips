@@ -349,7 +349,7 @@ export default function NewPredictionPage() {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="falcon-form-label" htmlFor="date">
                 {t(lang, "newPrediction.date")}
@@ -377,27 +377,11 @@ export default function NewPredictionPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label className="falcon-form-label" htmlFor="odds">
-                {t(lang, "newPrediction.odds")}
-              </label>
-              <input
-                id="odds"
-                type="number"
-                step="0.01"
-                min="1.00"
-                value={form.odds}
-                onChange={(e) => setForm((f) => ({ ...f, odds: e.target.value }))}
-                className="falcon-form-control"
-                placeholder="1.85"
-                required
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
             <label className="falcon-form-label" htmlFor="mainPrediction">
-              {t(lang, "newPrediction.mainPrediction")}
+              {t(lang, "newPrediction.myPrediction")}
             </label>
             <input
               id="mainPrediction"
@@ -406,6 +390,23 @@ export default function NewPredictionPage() {
               onChange={(e) => setForm((f) => ({ ...f, prediction_text: e.target.value }))}
               className="falcon-form-control"
               placeholder={t(lang, "newPrediction.mainPredictionExample")}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="falcon-form-label" htmlFor="odds">
+              {t(lang, "newPrediction.odds")}
+            </label>
+            <input
+              id="odds"
+              type="number"
+              step="0.01"
+              min="1.00"
+              value={form.odds}
+              onChange={(e) => setForm((f) => ({ ...f, odds: e.target.value }))}
+              className="falcon-form-control"
+              placeholder="1.85"
               required
             />
           </div>
