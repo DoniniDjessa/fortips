@@ -10,7 +10,7 @@ type CompetitionBadgeProps = {
 export default function CompetitionBadge({ code, className, size = "sm" }: CompetitionBadgeProps) {
   if (!code) return null;
 
-  const competition = competitionIndex[code];
+  const competition = (competitionIndex as Record<string, { name: string; country: string; flag: string } | undefined>)[code];
   const label = competition?.name ?? code;
   const country = competition?.country ?? null;
   const flag = competition?.flag ?? null;

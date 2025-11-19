@@ -86,7 +86,7 @@ body {
   }
 
   .falcon-title {
-    @apply text-lg font-semibold text-[var(--color-text-primary-light)] dark:text-[var(--color-text-primary-dark)];
+    @apply text-lg font-semibold text-slate-500 dark:text-slate-100;
   }
 
   .falcon-subtitle {
