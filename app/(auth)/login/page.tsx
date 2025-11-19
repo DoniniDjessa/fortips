@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,12 +114,147 @@ export default function LoginPage() {
           {loading ? t(lang, "auth.signingIn") : t(lang, "auth.signIn")}
         </button>
       </form>
-      <div className="text-[10px] text-center text-slate-500 dark:text-slate-300">
-        {t(lang, "auth.needAccount")}{" "}
-        <Link href="/register" className="font-semibold text-[var(--color-falcon-primary)] no-underline hover:underline">
-          {t(lang, "auth.register")}
-        </Link>
+      <div className="flex flex-col items-center gap-3">
+        <button
+          onClick={() => setShowLearnMoreModal(true)}
+          className="falcon-btn-secondary w-full"
+        >
+          {t(lang, "home.learnMore")}
+        </button>
+        <div className="text-[10px] text-center text-slate-500 dark:text-slate-300">
+          {t(lang, "auth.needAccount")}{" "}
+          <Link href="/register" className="font-semibold text-[var(--color-falcon-primary)] no-underline hover:underline">
+            {t(lang, "auth.register")}
+          </Link>
+        </div>
       </div>
+
+      {/* Learn More Modal */}
+      {showLearnMoreModal && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setShowLearnMoreModal(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-slate-200/70 bg-white/95 p-6 shadow-[0_30px_70px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80 dark:shadow-[0_28px_70px_rgba(15,23,42,0.7)]">
+              <button
+                onClick={() => setShowLearnMoreModal(false)}
+                className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-slate-500 transition hover:border-[var(--color-falcon-primary)] hover:text-[var(--color-falcon-primary)] dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+                aria-label={t(lang, "common.close")}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M18 6L6 18" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="space-y-6">
+                <div>
+                  <h2 className="falcon-title mb-2">{t(lang, "app.name")}</h2>
+                  <p className="falcon-subtitle">{t(lang, "home.appDescription")}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-200 mb-4">
+                    {t(lang, "home.howItWorks")}
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
+                          <span className="text-[11px] font-bold">1</span>
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
+                            {t(lang, "home.step1Title")}
+                          </h4>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            {t(lang, "home.step1Desc")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
+                          <span className="text-[11px] font-bold">2</span>
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
+                            {t(lang, "home.step2Title")}
+                          </h4>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            {t(lang, "home.step2Desc")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
+                          <span className="text-[11px] font-bold">3</span>
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
+                            {t(lang, "home.step3Title")}
+                          </h4>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            {t(lang, "home.step3Desc")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
+                          <span className="text-[11px] font-bold">4</span>
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
+                            {t(lang, "home.step4Title")}
+                          </h4>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            {t(lang, "home.step4Desc")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
+                          <span className="text-[11px] font-bold">5</span>
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
+                            {t(lang, "home.step5Title")}
+                          </h4>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            {t(lang, "home.step5Desc")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

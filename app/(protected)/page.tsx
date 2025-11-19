@@ -87,7 +87,6 @@ export default function ProtectedHome() {
   const [adminCoupon, setAdminCoupon] = useState<Prediction[]>([]);
   const [bestUsersCoupon, setBestUsersCoupon] = useState<Coupon | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
 
   useEffect(() => {
     fetch("/api/predictions/check-status", { method: "POST" }).catch(() => {});
@@ -270,12 +269,6 @@ export default function ProtectedHome() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowLearnMoreModal(true)}
-            className="falcon-btn-secondary hidden sm:inline-flex"
-          >
-            {t(lang, "home.learnMore")}
-          </button>
           <Link href="/predictions/new" className="falcon-btn-primary hidden sm:inline-flex">
             {t(lang, "home.createPick")}
           </Link>
@@ -552,18 +545,6 @@ export default function ProtectedHome() {
                         {statusInfo.label}
                       </span>
                     </div>
-                    {performanceBadges.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {performanceBadges.map((badge) => (
-                          <span
-                            key={badge}
-                            className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:bg-slate-800 dark:text-white"
-                          >
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                     <div>
                       <p className="text-sm font-semibold text-slate-800 dark:text-white">{p.match_name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[9px] text-slate-500 dark:text-slate-400">
@@ -597,133 +578,6 @@ export default function ProtectedHome() {
           </div>
         )}
       </section>
-
-      {/* Learn More Modal */}
-      {showLearnMoreModal && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setShowLearnMoreModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-slate-200/70 bg-white/95 p-6 shadow-[0_30px_70px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80 dark:shadow-[0_28px_70px_rgba(15,23,42,0.7)]">
-              <button
-                onClick={() => setShowLearnMoreModal(false)}
-                className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-slate-500 transition hover:border-[var(--color-falcon-primary)] hover:text-[var(--color-falcon-primary)] dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
-                aria-label={t(lang, "common.close")}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <path d="M18 6L6 18" />
-                  <path d="M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="space-y-6">
-                <div>
-                  <h2 className="falcon-title mb-2">{t(lang, "app.name")}</h2>
-                  <p className="falcon-subtitle">{t(lang, "home.appDescription")}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-200 mb-4">
-                    {t(lang, "home.howItWorks")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
-                          <span className="text-[11px] font-bold">1</span>
-                        </span>
-                        <div>
-                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
-                            {t(lang, "home.step1Title")}
-                          </h4>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
-                            {t(lang, "home.step1Desc")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
-                          <span className="text-[11px] font-bold">2</span>
-                        </span>
-                        <div>
-                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
-                            {t(lang, "home.step2Title")}
-                          </h4>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
-                            {t(lang, "home.step2Desc")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
-                          <span className="text-[11px] font-bold">3</span>
-                        </span>
-                        <div>
-                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
-                            {t(lang, "home.step3Title")}
-                          </h4>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
-                            {t(lang, "home.step3Desc")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
-                          <span className="text-[11px] font-bold">4</span>
-                        </span>
-                        <div>
-                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
-                            {t(lang, "home.step4Title")}
-                          </h4>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
-                            {t(lang, "home.step4Desc")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-900/60">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(44,123,229,0.12)] text-[var(--color-falcon-primary)] dark:bg-[rgba(44,123,229,0.22)]">
-                          <span className="text-[11px] font-bold">5</span>
-                        </span>
-                        <div>
-                          <h4 className="text-[11px] font-semibold text-slate-800 dark:text-white mb-1">
-                            {t(lang, "home.step5Title")}
-                          </h4>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300">
-                            {t(lang, "home.step5Desc")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -754,33 +608,62 @@ function getEmptyStateCopy(tab: DayKey, lang: "fr" | "en") {
   return t(lang, keyMap[tab]);
 }
 
-function buildPerformanceBadges(user: TipUserInfo | null, lang: "fr" | "en") {
+function buildPerformanceBadges(user: TipUserInfo | null, lang: "fr" | "en"): string[] {
   if (!user) return [];
 
-  const badges: string[] = [];
   const total = user.total_predictions ?? 0;
   const successRate = user.success_rate ?? 0;
   const avgOdds = user.avg_odds ?? 0;
   const exact = user.exact_score_predictions ?? 0;
 
-  if (successRate && total >= 5) {
-    badges.push(`${t(lang, "home.winRate")} ${successRate.toFixed(0)}%`);
-  }
-  if (total) {
-    badges.push(`${total} ${t(lang, "home.picks")}`);
-  }
-  if (avgOdds) {
-    badges.push(`${t(lang, "home.avgOdds")} ${avgOdds.toFixed(2)}`);
-  }
-  if (exact) {
-    badges.push(`${exact} ${t(lang, "home.exactScores")}`);
+  const badges: Array<{ priority: number; badge: string }> = [];
+
+  // Category 1: Top Rankings (Top 3, Top 10, etc.)
+  if (total >= 100 && successRate >= 85) {
+    badges.push({ priority: 1, badge: t(lang, "badges.top3") });
+  } else if (total >= 50 && successRate >= 80) {
+    badges.push({ priority: 2, badge: t(lang, "badges.top10") });
+  } else if (total >= 25 && successRate >= 75) {
+    badges.push({ priority: 3, badge: t(lang, "badges.top50") });
   }
 
+  // Category 2: Level/Experience (Newbie, Amateur, Expert, Master, Legend)
+  if (total === 0) {
+    badges.push({ priority: 10, badge: t(lang, "badges.newbie") });
+  } else if (total < 10) {
+    badges.push({ priority: 9, badge: t(lang, "badges.beginner") });
+  } else if (total < 25) {
+    badges.push({ priority: 8, badge: t(lang, "badges.amateur") });
+  } else if (total < 50) {
+    badges.push({ priority: 7, badge: t(lang, "badges.intermediate") });
+  } else if (total < 100) {
+    badges.push({ priority: 6, badge: t(lang, "badges.expert") });
+  } else if (total < 200) {
+    badges.push({ priority: 5, badge: t(lang, "badges.master") });
+  } else {
+    badges.push({ priority: 4, badge: t(lang, "badges.legend") });
+  }
+
+  // Category 3: Performance-based (Perfect, Consistent, Rising Star)
   if (successRate === 100 && total >= 5) {
-    badges.unshift(t(lang, "home.perfectStreak"));
-  } else if (successRate >= 80 && total >= 25) {
-    badges.unshift(t(lang, "home.topPick"));
+    badges.push({ priority: 1, badge: t(lang, "badges.perfect") });
+  } else if (successRate >= 90 && total >= 20) {
+    badges.push({ priority: 2, badge: t(lang, "badges.consistent") });
+  } else if (successRate >= 70 && total >= 10 && total < 25) {
+    badges.push({ priority: 3, badge: t(lang, "badges.risingStar") });
   }
 
-  return Array.from(new Set(badges));
+  // Category 4: Specialized (Exact Score Master, High Roller, Safe Player)
+  if (exact >= 10 && total >= 30) {
+    badges.push({ priority: 4, badge: t(lang, "badges.exactMaster") });
+  }
+  if (avgOdds >= 3.0 && total >= 15) {
+    badges.push({ priority: 5, badge: t(lang, "badges.highRoller") });
+  } else if (avgOdds <= 1.5 && total >= 20) {
+    badges.push({ priority: 6, badge: t(lang, "badges.safePlayer") });
+  }
+
+  // Sort by priority (lower number = higher priority) and take top 3
+  badges.sort((a, b) => a.priority - b.priority);
+  return badges.slice(0, 3).map((b) => b.badge);
 }
