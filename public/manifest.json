@@ -1,0 +1,31 @@
+{
+  "name": "Coupon fort",
+  "short_name": "cpf",
+  "description": "Premium predictions dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#2c7be5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/cpficon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/cpficon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/cpficon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

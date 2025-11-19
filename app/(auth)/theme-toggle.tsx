@@ -30,7 +30,7 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-label={isDark ? "Switch to light" : "Switch to dark"}
       title={isDark ? "Light" : "Dark"}
-      className="inline-flex items-center justify-center rounded-full h-9 w-9 bg-white text-gray-900 shadow-sm hover:shadow dark:bg-slate-700 dark:text-gray-100 transition"
+      className="inline-flex items-center justify-center rounded-full h-7 w-7 bg-white dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border border-emerald-200 dark:border-emerald-800 shadow-sm hover:shadow transition"
     >
       {isDark ? (
         // Sun icon when dark (to indicate switching to light)

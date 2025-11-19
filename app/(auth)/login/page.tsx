@@ -59,66 +59,65 @@ export default function LoginPage() {
           if (signErr) throw signErr;
         }
       }
-      toast.success(lang === "fr" ? "Connexion réussie" : "Login successful");
+      toast.success(t(lang, "auth.loginSuccess"));
       setTimeout(() => { window.location.href = "/"; }, 50);
     } catch (err) {
-      setError(t(lang, "auth.login") + " failed");
-      toast.error(lang === "fr" ? "Échec de connexion" : "Login failed");
+      setError(t(lang, "auth.loginFailed"));
+      toast.error(t(lang, "auth.loginFailed"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white dark:bg-slate-700 rounded-2xl shadow-sm p-4 sm:p-6">
-      <h1 className="text-xl font-bold mb-1 font-[family-name:var(--font-fira-sans-condensed)] text-gray-900 dark:text-gray-100">
-        {t(lang, "auth.login")}
-      </h1>
-      <p className="text-xs text-gray-600 dark:text-gray-300 mb-6">
-        {lang === "fr" ? "Utilisez votre email ou pseudo et mot de passe." : "Use your email or username and password."}
-      </p>
-      <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <span className="falcon-muted">{t(lang, "auth.welcomeBack")}</span>
+        <h1 className="falcon-title">{t(lang, "auth.login")}</h1>
+        <p className="falcon-subtitle">{t(lang, "auth.loginSubtitle")}</p>
+      </div>
+      <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label className="block text-xs text-gray-700 dark:text-gray-200">{t(lang, "auth.emailOrPseudo")}</label>
+          <label className="falcon-form-label">{t(lang, "auth.emailOrPseudo")}</label>
           <input
             type="text"
             value={form.identifier}
             onChange={(e) => setForm((f) => ({ ...f, identifier: e.target.value }))}
-            className="w-full rounded-xl border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-600 px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-500 transition"
-            placeholder={lang === "fr" ? "email@site.com / pseudo" : "email@site.com / username"}
+            className="falcon-form-control"
+            placeholder={t(lang, "auth.emailPlaceholder")}
             autoComplete="username"
           />
         </div>
         <div className="space-y-2">
-          <label className="block text-xs text-gray-700 dark:text-gray-200">{t(lang, "auth.password")}</label>
+          <label className="falcon-form-label">{t(lang, "auth.password")}</label>
           <div className="relative">
             <input
               type={showPwd ? "text" : "password"}
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className="w-full rounded-xl border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-600 px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-500 transition"
+              className="falcon-form-control pr-16"
               placeholder="••••••••"
               autoComplete="current-password"
             />
-            <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600 dark:text-gray-200">
-              {showPwd ? (lang === "fr" ? "Masquer" : "Hide") : (lang === "fr" ? "Afficher" : "Show")}
+            <button
+              type="button"
+              onClick={() => setShowPwd((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:text-[var(--color-falcon-primary)] dark:text-slate-200"
+            >
+              {showPwd ? t(lang, "auth.hide") : t(lang, "auth.show")}
             </button>
           </div>
         </div>
-        {error && (
-          <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
-        )}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full inline-flex items-center justify-center rounded-xl bg-gray-900 text-white dark:bg-slate-800 dark:text-gray-100 px-4 py-3 font-medium hover:opacity-90 active:opacity-80 transition"
-        >
-          {loading ? (lang === "fr" ? "Connexion..." : "Signing in...") : t(lang, "auth.signIn")}
+        {error && <div className="falcon-error">{error}</div>}
+        <button type="submit" disabled={loading} className="falcon-btn-primary w-full">
+          {loading ? t(lang, "auth.signingIn") : t(lang, "auth.signIn")}
         </button>
       </form>
-      <div className="mt-4 text-xs text-gray-600 dark:text-gray-300">
-        {t(lang, "auth.needAccount")} {" "}
-        <Link href="/register" className="underline">{t(lang, "auth.register")}</Link>
+      <div className="text-[10px] text-center text-slate-500 dark:text-slate-300">
+        {t(lang, "auth.needAccount")}{" "}
+        <Link href="/register" className="font-semibold text-[var(--color-falcon-primary)] no-underline hover:underline">
+          {t(lang, "auth.register")}
+        </Link>
       </div>
     </div>
   );

@@ -1,31 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-export type Lang = "fr" | "en";
+import { useLang, useSetLang } from "@/lib/lang-context";
 
 export default function LangToggle() {
-  const [lang, setLang] = useState<Lang>("fr");
-
-  useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("lang") : null;
-    if (stored === "fr" || stored === "en") setLang(stored);
-  }, []);
+  const lang = useLang();
+  const setLang = useSetLang();
 
   const toggle = () => {
     const next = lang === "fr" ? "en" : "fr";
     setLang(next);
-    localStorage.setItem("lang", next);
   };
+
+  const flagCode = lang === "fr" ? "fr" : "gb";
+  const altLabel = lang === "fr" ? "Français" : "English";
 
   return (
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm bg-white text-gray-900 shadow-sm hover:shadow dark:bg-slate-700 dark:text-gray-100 transition"
-      aria-label="Changer la langue / Change language"
+      className="inline-flex items-center justify-center rounded-full bg-white px-2.5 py-1.5 shadow-sm transition hover:shadow dark:border dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100"
+      aria-label={altLabel}
     >
-      {lang === "fr" ? "FR" : "EN"}
+      <span className="flex h-4 w-6 items-center justify-center overflow-hidden rounded-[6px] border border-emerald-200/70 bg-slate-50 dark:border-emerald-700/60">
+        <img
+          src={`https://flagcdn.com/24x18/${flagCode}.png`}
+          alt={altLabel}
+          width={24}
+          height={18}
+          className="block h-auto w-full"
+        />
+      </span>
     </button>
   );
 }

@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { useLang } from "@/lib/lang";
+import { t } from "@/app/i18n";
+import Link from "next/link";
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const lang = useLang();
   const [email, setEmail] = useState("");
   const [pseudo, setPseudo] = useState("");
   const [saving, setSaving] = useState(false);
@@ -30,7 +36,7 @@ export default function ProfilePage() {
       const user = data.user;
       if (!user) throw new Error("no_user");
       if (!email) {
-        setMsg("Email requis / Email required");
+        setMsg(t(lang, "common.emailRequired"));
         setSaving(false);
         return;
       }
@@ -41,10 +47,10 @@ export default function ProfilePage() {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        if (j?.error === "email_in_use") setMsg("Email déjà utilisé / Email already in use");
-        else setMsg("Erreur / Error");
+        if (j?.error === "email_in_use") setMsg(t(lang, "common.emailInUse"));
+        else setMsg(t(lang, "common.error"));
       } else {
-        setMsg("Enregistré / Saved");
+        setMsg(t(lang, "common.saved"));
       }
     } finally {
       setSaving(false);
@@ -52,33 +58,71 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <div className="bg-white dark:bg-slate-700 rounded-2xl shadow-sm p-4 sm:p-6">
-        <h1 className="text-2xl font-bold mb-4 font-[family-name:var(--font-fira-sans-condensed)] text-gray-900 dark:text-gray-100">Profil</h1>
-        <form onSubmit={onSave} className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm text-gray-700 dark:text-gray-200">Pseudo</label>
-            <input
-              disabled
-              value={pseudo}
-              className="w-full rounded-xl border border-gray-300 dark:border-slate-500 bg-gray-100 dark:bg-slate-600 px-4 py-3 text-gray-900 dark:text-gray-100"
-            />
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-6 pb-20">
+      <header className="flex items-center gap-3">
+        <button onClick={() => router.push("/")} className="falcon-pill-link px-3 py-2">
+          ← {t(lang, "common.back")}
+        </button>
+        <div>
+          <span className="falcon-muted">{t(lang, "profile.account")}</span>
+          <h1 className="falcon-title">{t(lang, "profile.profile")}</h1>
+        </div>
+      </header>
+
+      <form onSubmit={onSave} className="falcon-shell space-y-5">
+        <div className="space-y-2">
+          <label className="falcon-form-label" htmlFor="pseudo">
+            {t(lang, "profile.username")}
+          </label>
+          <input
+            id="pseudo"
+            disabled
+            value={pseudo}
+            className="falcon-form-control bg-slate-50 text-slate-500 dark:bg-slate-800/80 dark:text-slate-400"
+          />
+          <p className="falcon-subtitle">
+            {t(lang, "profile.usernameDesc")}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="falcon-form-label" htmlFor="email">
+            {t(lang, "profile.email")}
+          </label>
+          <input
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            className="falcon-form-control"
+            placeholder="email@site.com"
+          />
+          <p className="falcon-subtitle">
+            {t(lang, "profile.emailDesc")}
+          </p>
+        </div>
+
+        {msg && (
+          <div className="falcon-chip-success">
+            {msg}
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm text-gray-700 dark:text-gray-200">Email</label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              className="w-full rounded-xl border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-600 px-4 py-3 text-gray-900 dark:text-gray-100"
-              placeholder="email@site.com"
-            />
-          </div>
-          {msg && <div className="text-sm text-gray-700 dark:text-gray-200">{msg}</div>}
-          <button type="submit" disabled={saving} className="inline-flex items-center justify-center rounded-xl bg-gray-900 text-white dark:bg-slate-800 dark:text-gray-100 px-4 py-3 font-medium hover:opacity-90 active:opacity-80 transition">
-            {saving ? "Enregistrement... / Saving..." : "Enregistrer / Save"}
-          </button>
-        </form>
+        )}
+
+        <button type="submit" disabled={saving} className="falcon-btn-primary w-full disabled:opacity-60">
+          {saving ? t(lang, "common.saving") : t(lang, "common.save")}
+        </button>
+      </form>
+
+      <div className="rounded-[1.8rem] border border-slate-200/70 bg-white/70 p-4 text-[10px] text-slate-500 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-400">
+        <p className="font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300">
+          {t(lang, "common.needHelp")}
+        </p>
+        <p className="mt-2">
+          {t(lang, "common.contactSupport")}
+        </p>
+        <Link href="/support" className="falcon-pill-link mt-3 inline-flex">
+          {t(lang, "common.contactSupportLink")}
+        </Link>
       </div>
     </div>
   );

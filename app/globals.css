@@ -1,29 +1,169 @@
 @import "tailwindcss";
 
-/* Theme tokens matching requested palette */
+/* Falcon-inspired theme tokens */
 @theme inline {
-  --color-app-bg-light: rgb(229 231 235); /* gray-200 */
-  --color-app-bg-dark: rgb(15 23 42); /* slate-900 */
-  --color-card-bg-light: rgb(255 255 255); /* white */
-  --color-card-bg-dark: rgb(71 85 105); /* slate-600 */
-  --color-text-primary-light: rgb(17 24 39); /* gray-900 */
-  --color-text-secondary-light: rgb(55 65 81); /* gray-700 */
-  --color-text-primary-dark: rgb(243 244 246); /* gray-100 */
-  --color-text-secondary-dark: rgb(229 231 235); /* gray-200 */
+  --color-falcon-primary: #2c7be5;
+  --color-falcon-primary-dark: #215bb4;
+  --color-falcon-success: #00d27a;
+  --color-falcon-warning: #f6c343;
+  --color-falcon-danger: #e63757;
+  --color-app-bg-light: #f4f6fb;
+  --color-app-bg-dark: #0f172a;
+  --color-card-bg-light: #ffffff;
+  --color-card-bg-dark: #1e293b;
+  --color-text-primary-light: #12263f;
+  --color-text-secondary-light: #5e6e82;
+  --color-text-primary-dark: #f8fafc;
+  --color-text-secondary-dark: #cbd5f5;
 }
 
 html {
-  background-color: var(--color-app-bg-light);
+  background: radial-gradient(circle at 0% 0%, rgba(44, 123, 229, 0.18) 0%, rgba(244, 246, 251, 0.95) 55%), #f4f6fb;
   color: var(--color-text-primary-light);
 }
 
 html.dark {
-  background-color: var(--color-app-bg-dark);
+  background: radial-gradient(circle at 0% 0%, rgba(44, 123, 229, 0.25) 0%, rgba(15, 23, 42, 0.98) 60%), #0f172a;
   color: var(--color-text-primary-dark);
 }
 
 body {
   min-height: 100vh;
-  font-size: 13px; /* smaller default text across the app */
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.55;
+  background: transparent;
+  color: inherit;
+  overflow-x: hidden;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-[family-name:var(--font-fira-sans-condensed)] font-semibold text-slate-900 dark:text-white tracking-tight;
+  }
+
+  p,
+  span,
+  label {
+    color: inherit;
+  }
+
+  a {
+    @apply text-[var(--color-falcon-primary)] underline-offset-4 hover:underline;
+  }
+
+  ::selection {
+    background: rgba(44, 123, 229, 0.25);
+  }
+}
+
+@layer components {
+  .falcon-shell {
+    @apply relative w-full rounded-[2.5rem] border border-slate-200/70 bg-white/95 p-6 shadow-[0_30px_70px_rgba(15,23,42,0.09)] backdrop-blur-md transition-all duration-300 ease-out dark:border-slate-700/60 dark:bg-slate-900/80 dark:shadow-[0_30px_80px_rgba(15,23,42,0.6)];
+  }
+
+  .falcon-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 2.5rem;
+    background: linear-gradient(120deg, rgba(44, 123, 229, 0.12), transparent 55%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+  }
+
+  .falcon-shell:hover::after {
+    opacity: 1;
+  }
+
+  .falcon-muted {
+    @apply text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400;
+  }
+
+  .falcon-title {
+    @apply text-lg font-semibold text-[var(--color-text-primary-light)] dark:text-[var(--color-text-primary-dark)];
+  }
+
+  .falcon-subtitle {
+    @apply text-xs text-[var(--color-text-secondary-light)] dark:text-[var(--color-text-secondary-dark)] leading-4;
+  }
+
+  .falcon-form-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-white;
+  }
+
+  .falcon-form-control {
+    @apply w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-[11px] text-slate-700 transition-all focus:border-[var(--color-falcon-primary)] focus:outline-none focus:ring-4 focus:ring-[rgba(44,123,229,0.2)] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-[var(--color-falcon-primary)] dark:focus:ring-[rgba(44,123,229,0.35)];
+  }
+
+  .falcon-btn-primary {
+    @apply inline-flex items-center justify-center rounded-[1.25rem] bg-[var(--color-falcon-primary)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_12px_30px_rgba(44,123,229,0.35)] transition-all duration-200 hover:translate-y-[-1px] hover:shadow-[0_16px_40px_rgba(44,123,229,0.45)] active:translate-y-0 active:shadow-[0_10px_24px_rgba(44,123,229,0.3)] disabled:pointer-events-none disabled:opacity-70;
+  }
+
+  .falcon-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-[1.25rem] border border-slate-200 bg-transparent px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 transition-all hover:border-[var(--color-falcon-primary)] hover:text-[var(--color-falcon-primary)] dark:border-slate-700 dark:text-slate-200 dark:hover:border-[var(--color-falcon-primary)] dark:hover:text-[var(--color-falcon-primary)];
+  }
+
+  .falcon-error {
+    @apply rounded-2xl border border-[rgba(230,55,87,0.2)] bg-[rgba(230,55,87,0.08)] px-4 py-3 text-[11px] font-medium text-[#e63757] dark:border-[rgba(230,55,87,0.25)] dark:bg-[rgba(230,55,87,0.15)] dark:text-[#f38faf];
+  }
+
+  .falcon-nav {
+    @apply flex items-center justify-between rounded-[1.75rem] border border-slate-200/70 bg-white/80 px-6 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.1)] backdrop-blur-md transition-all duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:shadow-[0_24px_60px_rgba(15,23,42,0.7)];
+  }
+
+  .falcon-nav-title {
+    @apply text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-300;
+  }
+
+  .falcon-chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[10px] font-medium text-slate-600 shadow-sm backdrop-blur sm:px-4 dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-slate-200;
+  }
+
+  .falcon-chip-success {
+    @apply inline-flex items-center gap-1 rounded-full border border-[rgba(0,210,122,0.35)] bg-[rgba(0,210,122,0.1)] px-3 py-1 text-[10px] font-medium text-[#0f5132] shadow-sm backdrop-blur sm:px-4 dark:border-[rgba(0,210,122,0.45)] dark:bg-[rgba(0,210,122,0.2)] dark:text-[#adf8d1];
+  }
+
+  .falcon-pill-link {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600 transition hover:border-[var(--color-falcon-primary)] hover:text-[var(--color-falcon-primary)] dark:border-slate-700 dark:text-slate-200;
+  }
+
+  .falcon-mini-card {
+    @apply w-full rounded-[1.5rem] border border-slate-200/70 bg-white/85 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-lg transition-all duration-300 hover:shadow-[0_26px_60px_rgba(15,23,42,0.18)] dark:border-slate-700/60 dark:bg-slate-900/60 dark:shadow-[0_24px_55px_rgba(15,23,42,0.65)];
+  }
+
+  .falcon-grid {
+    @apply grid grid-cols-1 gap-4 sm:gap-5;
+  }
+
+  .falcon-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+  }
+
+  .falcon-scroll::-webkit-scrollbar {
+    width: 0.4rem;
+  }
+
+  .falcon-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.6);
+    border-radius: 9999px;
+  }
+
+  .falcon-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dark .falcon-scroll {
+    scrollbar-color: rgba(71, 85, 105, 0.6) transparent;
+  }
+
+  .dark .falcon-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(71, 85, 105, 0.6);
+  }
 }

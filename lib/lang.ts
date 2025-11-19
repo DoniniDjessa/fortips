@@ -1,16 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-export type Lang = "fr" | "en";
-
-export function useLang(defaultLang: Lang = "fr") {
-  const [lang, setLang] = useState<Lang>(defaultLang);
-  useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("lang") : null;
-    if (stored === "fr" || stored === "en") setLang(stored);
-  }, []);
-  return lang;
-}
+// Re-export from lang-context for backward compatibility
+export type { Lang } from "./lang-context";
+export { useLang } from "./lang-context";
 
 
