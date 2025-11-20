@@ -491,44 +491,70 @@ export default function ProtectedHome() {
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-0.5">
-                        <Link
-                          href={`/user/${p.user_id}`}
-                          className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-falcon-primary)]"
-                        >
-                          @{userName}
-                        </Link>
-                        {p.tip_users && (
-                          <div className="flex items-center gap-1.5 text-[9px] text-slate-500 dark:text-slate-400">
-                            {p.tip_users.success_rate !== null && p.tip_users.success_rate !== undefined ? (
-                              (() => {
-                                const rate = p.tip_users.success_rate;
-                                const totalPreds = p.tip_users.total_predictions || 0;
-                                let className = "font-medium";
-                                
-                                // If user hasn't made predictions yet (0.0% and no predictions), show default gray
-                                if (rate === 0 && totalPreds === 0) {
-                                  className = "text-slate-500 dark:text-slate-400";
-                                } else if (rate >= 80) {
-                                  // High success rate - green and bold
-                                  className = "font-bold text-green-600 dark:text-green-400";
-                                } else if (rate <= 20 && totalPreds > 0) {
-                                  // Low success rate (only if they have predictions) - red and bold
-                                  className = "font-bold text-red-600 dark:text-red-400";
-                                } else if (rate >= 45 && rate <= 55) {
-                                  // Medium range - gray
-                                  className = "text-slate-500 dark:text-slate-400";
-                                }
-                                
-                                return (
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/user/${p.user_id}`}
+                            className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-falcon-primary)]"
+                          >
+                            @{userName}
+                          </Link>
+                          {p.tip_users && p.tip_users.success_rate !== null && p.tip_users.success_rate !== undefined ? (
+                            (() => {
+                              const rate = p.tip_users.success_rate;
+                              const totalPreds = p.tip_users.total_predictions || 0;
+                              let className = "text-[9px] font-medium";
+                              let progressColor = "bg-slate-300 dark:bg-slate-600";
+                              
+                              // If user hasn't made predictions yet (0.0% and no predictions), show default gray
+                              if (rate === 0 && totalPreds === 0) {
+                                className = "text-[9px] text-slate-500 dark:text-slate-400";
+                                progressColor = "bg-slate-300 dark:bg-slate-600";
+                              } else if (rate >= 80) {
+                                // High success rate - green and bold
+                                className = "text-[9px] font-bold text-green-600 dark:text-green-400";
+                                progressColor = "bg-green-500 dark:bg-green-400";
+                              } else if (rate <= 20 && totalPreds > 0) {
+                                // Low success rate (only if they have predictions) - red and bold
+                                className = "text-[9px] font-bold text-red-600 dark:text-red-400";
+                                progressColor = "bg-red-500 dark:bg-red-400";
+                              } else if (rate >= 45 && rate <= 55) {
+                                // Medium range - gray
+                                className = "text-[9px] text-slate-500 dark:text-slate-400";
+                                progressColor = "bg-slate-400 dark:bg-slate-500";
+                              } else {
+                                // Medium-low or medium-high - yellow/orange
+                                className = "text-[9px] font-medium text-amber-600 dark:text-amber-400";
+                                progressColor = "bg-amber-500 dark:bg-amber-400";
+                              }
+                              
+                              const fillPercentage = Math.max(0, Math.min(100, rate));
+                              
+                              return (
+                                <>
                                   <span className={className}>
                                     {rate.toFixed(1)}%
                                   </span>
-                                );
-                              })()
-                            ) : null}
+                                  <div className="relative h-2 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-500 ease-out ${progressColor}`}
+                                      style={{ width: `${fillPercentage}%` }}
+                                    />
+                                  </div>
+                                </>
+                              );
+                            })()
+                          ) : null}
+                        </div>
+                        {p.tip_users && (
+                          <div className="flex items-center gap-1.5 text-[9px] text-slate-500 dark:text-slate-400">
                             {p.tip_users.total_predictions !== null && p.tip_users.total_predictions !== undefined ? (
                               <span>
-                                {p.tip_users.total_predictions} {t(lang, "home.predictionCount")}
+                                {(() => {
+                                  const total = p.tip_users.total_predictions;
+                                  const successRate = p.tip_users.success_rate ?? 0;
+                                  const successful = Math.round((successRate / 100) * total);
+                                  return `${successful}/${total} ${t(lang, "home.predictionCount")}`;
+                                })()}
                               </span>
                             ) : null}
                             {p.tip_users.avg_odds !== null && p.tip_users.avg_odds !== undefined ? (
@@ -550,6 +576,9 @@ export default function ProtectedHome() {
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[9px] text-slate-500 dark:text-slate-400">
                         <span className="capitalize">{p.sport}</span>
                         <CompetitionBadge code={p.competition} size="xs" />
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                          {formatDate(p.date)} · {p.time}
+                        </span>
                       </div>
                     </div>
                     <p className="rounded-[1.2rem] border border-[rgba(44,123,229,0.18)] bg-[rgba(44,123,229,0.07)] px-3 py-2 text-[11px] font-medium text-[var(--color-falcon-primary)] dark:border-[rgba(44,123,229,0.35)] dark:bg-[rgba(44,123,229,0.16)]">

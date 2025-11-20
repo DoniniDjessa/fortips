@@ -21,8 +21,14 @@ type Prediction = {
   prediction_text: string;
   details: string | null;
   status: string;
+  result: string | null;
   created_at: string;
   tip_users: { pseudo: string | null; email: string | null } | null;
+};
+
+type PredictionActionState = {
+  resultAction: "success" | "failed" | null;
+  exactScoreAction: "exact_success" | "success" | null;
 };
 
 export default function AdminResultsPage() {
@@ -30,6 +36,7 @@ export default function AdminResultsPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [actionStates, setActionStates] = useState<Record<string, PredictionActionState>>({});
 
   useEffect(() => {
     loadPredictions();
@@ -43,24 +50,56 @@ export default function AdminResultsPage() {
           `*,
           tip_users:"tip-users"(pseudo,email)`
         )
-        .in("status", ["waiting_result", "active"])
+        .in("status", ["waiting_result", "active", "success", "failed"])
         .order("date", { ascending: true })
         .order("time", { ascending: true });
 
       if (error) throw error;
 
-      const now = Date.now();
-      const filtered = (data || []).filter((prediction: any) => {
-        if (prediction.status === "waiting_result") return true;
-        if (prediction.status !== "active") return false;
+      // Get yesterday, today, and tomorrow dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
+      const filtered = (data || []).filter((prediction: any) => {
         const matchDate = getMatchDate(prediction.date, prediction.time);
         if (!matchDate) return false;
 
-        return matchDate.getTime() <= now;
+        // Only show predictions for yesterday, today, or tomorrow
+        const matchDateOnly = new Date(matchDate);
+        matchDateOnly.setHours(0, 0, 0, 0);
+
+        const isYesterday = matchDateOnly.getTime() === yesterday.getTime();
+        const isToday = matchDateOnly.getTime() === today.getTime();
+        const isTomorrow = matchDateOnly.getTime() === tomorrow.getTime();
+
+        if (!isYesterday && !isToday && !isTomorrow) return false;
+
+        // For active/waiting_result, only show if match has passed
+        if (prediction.status === "waiting_result" || prediction.status === "active") {
+          return matchDate.getTime() <= Date.now();
+        }
+
+        // For success/failed, show if it's yesterday, today, or tomorrow
+        return true;
       });
 
       setPredictions(filtered as Prediction[]);
+      
+      // Initialize action states for predictions that need both actions
+      const newActionStates: Record<string, PredictionActionState> = {};
+      filtered.forEach((p: Prediction) => {
+        if (p.status === "waiting_result" || p.status === "active") {
+          newActionStates[p.id] = {
+            resultAction: null,
+            exactScoreAction: null,
+          };
+        }
+      });
+      setActionStates(newActionStates);
     } catch (err: any) {
       toast.error(t(lang, "common.error"));
     } finally {
@@ -68,7 +107,7 @@ export default function AdminResultsPage() {
     }
   };
 
-  const handleResult = async (id: string, result: "success" | "failed" | "exact_success") => {
+  const handleResult = async (id: string, result: "success" | "failed") => {
     const accessCode =
       typeof window !== "undefined" ? window.sessionStorage.getItem(TPADMIN_ACCESS_CODE_STORAGE_KEY) : null;
 
@@ -79,47 +118,167 @@ export default function AdminResultsPage() {
 
     try {
       setProcessingId(id);
-      const { data: userData } = await supabase.auth.getUser();
-      const payload: Record<string, unknown> = {
-        prediction_id: id,
-        result,
-        access_code: accessCode,
-      };
-      if (userData.user) {
-        payload.user_id = userData.user.id;
+      
+      // Update local state
+      const currentState = actionStates[id] || { resultAction: null, exactScoreAction: null };
+      const newState = { ...currentState, resultAction: result };
+      setActionStates({ ...actionStates, [id]: newState });
+
+      const prediction = predictions.find((p) => p.id === id);
+      if (!prediction) return;
+
+      // Check if both actions are completed
+      const hasProbableScore = !!prediction.probable_score;
+      const bothCompleted = hasProbableScore 
+        ? newState.resultAction !== null && newState.exactScoreAction !== null
+        : newState.resultAction !== null;
+
+      if (bothCompleted) {
+        // Both actions completed, finalize the prediction
+        const { data: userData } = await supabase.auth.getUser();
+        const finalResult = hasProbableScore && newState.exactScoreAction === "exact_success"
+          ? "exact_success"
+          : newState.resultAction === "success"
+          ? "success"
+          : "failed";
+
+        const payload: Record<string, unknown> = {
+          prediction_id: id,
+          result: finalResult,
+          access_code: accessCode,
+        };
+        if (userData.user) {
+          payload.user_id = userData.user.id;
+        }
+
+        const res = await fetch("/api/admin/update-result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.status === 403) {
+          toast.error(t(lang, "admin.accessDenied"));
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed");
+
+        toast.success(
+          finalResult === "success"
+            ? t(lang, "status.success")
+            : finalResult === "exact_success"
+            ? t(lang, "status.exactSuccess")
+            : t(lang, "status.failed")
+        );
+
+        // Remove from action states and reload
+        const updatedStates = { ...actionStates };
+        delete updatedStates[id];
+        setActionStates(updatedStates);
+        loadPredictions();
+      } else {
+        // Only one action completed, show feedback
+        toast.success(
+          result === "success"
+            ? t(lang, "status.success")
+            : t(lang, "status.failed")
+        );
       }
-
-      const res = await fetch("/api/admin/update-result", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.status === 403) {
-        toast.error(t(lang, "admin.accessDenied"));
-        return;
-      }
-
-      if (!res.ok) throw new Error("Failed");
-
-      toast.success(
-        result === "success"
-          ? t(lang, "status.success")
-          : result === "exact_success"
-          ? t(lang, "status.exactSuccess")
-          : t(lang, "status.failed")
-      );
-
-      loadPredictions();
     } catch (err) {
       toast.error(t(lang, "common.error"));
+      // Revert state on error
+      loadPredictions();
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleExactScore = (id: string, isSuccess: boolean) => {
-    handleResult(id, isSuccess ? "exact_success" : "success");
+  const handleExactScore = async (id: string, isSuccess: boolean) => {
+    const accessCode =
+      typeof window !== "undefined" ? window.sessionStorage.getItem(TPADMIN_ACCESS_CODE_STORAGE_KEY) : null;
+
+    if (accessCode !== TPADMIN_ACCESS_CODE) {
+      toast.error(t(lang, "admin.invalidCode"));
+      return;
+    }
+
+    try {
+      setProcessingId(id);
+      
+      // Update local state
+      const currentState = actionStates[id] || { resultAction: null, exactScoreAction: null };
+      const newState: PredictionActionState = { 
+        ...currentState, 
+        exactScoreAction: isSuccess ? "exact_success" : "success" 
+      };
+      setActionStates({ ...actionStates, [id]: newState });
+
+      const prediction = predictions.find((p) => p.id === id);
+      if (!prediction) return;
+
+      // Check if both actions are completed
+      const bothCompleted = newState.resultAction !== null && newState.exactScoreAction !== null;
+
+      if (bothCompleted) {
+        // Both actions completed, finalize the prediction
+        const { data: userData } = await supabase.auth.getUser();
+        const finalResult = newState.exactScoreAction === "exact_success"
+          ? "exact_success"
+          : newState.resultAction === "success"
+          ? "success"
+          : "failed";
+
+        const payload: Record<string, unknown> = {
+          prediction_id: id,
+          result: finalResult,
+          access_code: accessCode,
+        };
+        if (userData.user) {
+          payload.user_id = userData.user.id;
+        }
+
+        const res = await fetch("/api/admin/update-result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.status === 403) {
+          toast.error(t(lang, "admin.accessDenied"));
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed");
+
+        toast.success(
+          finalResult === "success"
+            ? t(lang, "status.success")
+            : finalResult === "exact_success"
+            ? t(lang, "status.exactSuccess")
+            : t(lang, "status.failed")
+        );
+
+        // Remove from action states and reload
+        const updatedStates = { ...actionStates };
+        delete updatedStates[id];
+        setActionStates(updatedStates);
+        loadPredictions();
+      } else {
+        // Only one action completed, show feedback
+        toast.success(
+          isSuccess
+            ? t(lang, "admin.exactScoreYes")
+            : t(lang, "admin.exactScoreNo")
+        );
+      }
+    } catch (err) {
+      toast.error(t(lang, "common.error"));
+      // Revert state on error
+      loadPredictions();
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   if (loading) {
@@ -149,10 +308,21 @@ export default function AdminResultsPage() {
             const matchDate = getMatchDate(p.date, p.time);
             const overdueLabel =
               p.status === "active" && matchDate ? formatRelative(matchDate, lang) : null;
+            
+            // Determine border color based on result (subtle border)
+            const borderColor = p.result === "success" || p.result === "exact_success"
+              ? "border-green-400 dark:border-green-500"
+              : p.result === "failed"
+              ? "border-red-400 dark:border-red-500"
+              : "border-gray-200 dark:border-slate-600";
+            
+            const actionState = actionStates[p.id] || { resultAction: null, exactScoreAction: null };
+            const isCompleted = p.status === "success" || p.status === "failed";
+            
             return (
               <div
                 key={p.id}
-                className="bg-white dark:bg-slate-700 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-slate-600"
+                className={`bg-white dark:bg-slate-700 rounded-xl shadow-sm p-4 border ${borderColor}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -185,42 +355,72 @@ export default function AdminResultsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleResult(p.id, "success")}
-                          disabled={processingId === p.id}
-                          className="inline-flex flex-1 items-center justify-center rounded-lg bg-green-600 text-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          ✓ {t(lang, "status.success")}
-                        </button>
-                        <button
-                          onClick={() => handleResult(p.id, "failed")}
-                          disabled={processingId === p.id}
-                          className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 text-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          ✕ {t(lang, "status.failed")}
-                        </button>
-                      </div>
-                      {p.probable_score && (
+                    {!isCompleted && (
+                      <div className="flex flex-col gap-2">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleExactScore(p.id, true)}
-                            disabled={processingId === p.id}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={() => handleResult(p.id, "success")}
+                            disabled={processingId === p.id || actionState.resultAction === "success"}
+                            className={`inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed ${
+                              actionState.resultAction === "success"
+                                ? "bg-green-700 text-white opacity-75"
+                                : "bg-green-600 text-white disabled:opacity-60"
+                            }`}
                           >
-                            🏁 {t(lang, "admin.exactScoreYes")}
+                            ✓ {t(lang, "status.success")}
+                            {actionState.resultAction === "success" && " ✓"}
                           </button>
                           <button
-                            onClick={() => handleExactScore(p.id, false)}
-                            disabled={processingId === p.id}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-amber-600 text-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={() => handleResult(p.id, "failed")}
+                            disabled={processingId === p.id || actionState.resultAction === "failed"}
+                            className={`inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed ${
+                              actionState.resultAction === "failed"
+                                ? "bg-red-700 text-white opacity-75"
+                                : "bg-red-600 text-white disabled:opacity-60"
+                            }`}
                           >
-                            ✕ {t(lang, "admin.exactScoreNo")}
+                            ✕ {t(lang, "status.failed")}
+                            {actionState.resultAction === "failed" && " ✓"}
                           </button>
                         </div>
-                      )}
-                    </div>
+                        {p.probable_score && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleExactScore(p.id, true)}
+                              disabled={processingId === p.id || actionState.exactScoreAction === "exact_success"}
+                              className={`inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed ${
+                                actionState.exactScoreAction === "exact_success"
+                                  ? "bg-emerald-700 text-white opacity-75"
+                                  : "bg-emerald-600 text-white disabled:opacity-60"
+                              }`}
+                            >
+                              🏁 {t(lang, "admin.exactScoreYes")}
+                              {actionState.exactScoreAction === "exact_success" && " ✓"}
+                            </button>
+                            <button
+                              onClick={() => handleExactScore(p.id, false)}
+                              disabled={processingId === p.id || actionState.exactScoreAction === "success"}
+                              className={`inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition disabled:cursor-not-allowed ${
+                                actionState.exactScoreAction === "success"
+                                  ? "bg-amber-700 text-white opacity-75"
+                                  : "bg-amber-600 text-white disabled:opacity-60"
+                              }`}
+                            >
+                              ✕ {t(lang, "admin.exactScoreNo")}
+                              {actionState.exactScoreAction === "success" && " ✓"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isCompleted && (
+                      <div className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                        {p.result === "success" || p.result === "exact_success"
+                          ? `✓ ${t(lang, "status.success")}`
+                          : `✕ ${t(lang, "status.failed")}`}
+                        {p.result === "exact_success" && ` (${t(lang, "admin.exactScore")})`}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
