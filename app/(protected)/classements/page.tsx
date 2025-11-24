@@ -234,7 +234,8 @@ export default function RankingsPage() {
           break;
       }
 
-      setRankings(sorted);
+      // Limit to top 20 entries regardless of filter
+      setRankings(sorted.slice(0, 20));
     } catch (err: any) {
       toast.error(t(lang, "common.error"));
       console.error("Error loading rankings:", err);

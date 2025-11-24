@@ -25,7 +25,7 @@ export default function CompetitionBadge({ code, className, size = "sm" }: Compe
       }`}
     >
       <CountryFlag flag={flag} country={country} size={size === "xs" ? "xs" : "sm"} />
-      <span className="max-w-[120px] truncate">{label}</span>
+      <span className="max-w-[200px] truncate">{label}</span>
     </span>
   );
 }
