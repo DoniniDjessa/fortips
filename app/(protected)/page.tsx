@@ -33,6 +33,7 @@ type Prediction = {
   prediction_text: string;
   details: string | null;
   status: string;
+  result: string | null;
   created_at: string;
   tip_users: TipUserInfo | null;
 };
@@ -45,7 +46,7 @@ type Coupon = {
 type DayKey = "yesterday" | "today" | "tomorrow";
 
 const getStatusLabel = (status: string, lang: "fr" | "en"): { label: string; chip: string } => {
-  const statusMap: Record<string, { chip: string; key: string }> = {
+  const statusMap: Record<string, { chip: string; key: string; emoji?: string }> = {
     pending_validation: {
       chip: "border-[rgba(246,195,67,0.35)] bg-[rgba(246,195,67,0.12)] text-[#9c6c12] dark:border-[rgba(246,195,67,0.45)] dark:bg-[rgba(246,195,67,0.2)] dark:text-[#f7d58b]",
       key: "status.pending",
@@ -61,6 +62,7 @@ const getStatusLabel = (status: string, lang: "fr" | "en"): { label: string; chi
     success: {
       chip: "border-[rgba(0,210,122,0.35)] bg-[rgba(0,210,122,0.12)] text-[#0f5132] dark:border-[rgba(0,210,122,0.45)] dark:bg-[rgba(0,210,122,0.2)] dark:text-[#adf8d1]",
       key: "status.success",
+      emoji: "🏆",
     },
     failed: {
       chip: "border-[rgba(230,55,87,0.35)] bg-[rgba(230,55,87,0.12)] text-[#c81f3f] dark:border-[rgba(230,55,87,0.45)] dark:bg-[rgba(230,55,87,0.2)] dark:text-[#f6a4b5]",
@@ -69,10 +71,12 @@ const getStatusLabel = (status: string, lang: "fr" | "en"): { label: string; chi
     exact_success: {
       chip: "border-[rgba(0,210,122,0.45)] bg-[rgba(0,210,122,0.16)] text-[#0f5132] dark:border-[rgba(0,210,122,0.55)] dark:bg-[rgba(0,210,122,0.26)] dark:text-[#adf8d1]",
       key: "status.exactSuccess",
+      emoji: "🏆🏆",
     },
   };
   const statusInfo = statusMap[status] || statusMap.active;
-  return { label: t(lang, statusInfo.key), chip: statusInfo.chip };
+  const label = statusInfo.emoji ? `${statusInfo.emoji} ${t(lang, statusInfo.key)}` : t(lang, statusInfo.key);
+  return { label, chip: statusInfo.chip };
 };
 
 export default function ProtectedHome() {
@@ -422,8 +426,15 @@ export default function ProtectedHome() {
               const userName = p.tip_users?.pseudo || p.tip_users?.email || "User";
               const statusInfo = getStatusLabel(p.status, lang);
               const performanceBadges = buildPerformanceBadges(p.tip_users, lang);
+              const isSuccess = p.status === "success" || p.status === "exact_success";
+              const isFailed = p.status === "failed";
+              const borderColor = isSuccess
+                ? "border-green-300 dark:border-green-600"
+                : isFailed
+                ? "border-red-300 dark:border-red-600"
+                : "border-slate-200/70 dark:border-slate-700/60";
               return (
-                <article key={p.id} className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700/60 dark:bg-slate-900/60">
+                <article key={p.id} className={`rounded-[1.5rem] border ${borderColor} bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900/60`}>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-0.5">
@@ -521,7 +532,13 @@ export default function ProtectedHome() {
                       {p.prediction_text}
                     </p>
                     {p.probable_score && (
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      <p className={`text-[10px] ${
+                        isSuccess
+                          ? "text-green-600 dark:text-green-400 font-semibold"
+                          : isFailed
+                          ? "text-red-600 dark:text-red-400 font-semibold"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}>
                         {t(lang, "home.probableScore")}: {p.probable_score}
                       </p>
                     )}

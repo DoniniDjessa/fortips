@@ -256,6 +256,8 @@ export const dictionaries: Record<Lang, any> = {
       past: "Passé",
       noPredictions: "Aucun pronostic",
       userLabel: "Utilisateur:",
+      history: "Historique",
+      lastPredictions: "Derniers pronostics",
     },
     admin: {
       pendingPredictions: "Pronostics en attente",
@@ -548,6 +550,8 @@ export const dictionaries: Record<Lang, any> = {
       past: "Past",
       noPredictions: "No predictions",
       userLabel: "User:",
+      history: "History",
+      lastPredictions: "Last predictions",
     },
     admin: {
       pendingPredictions: "Pending predictions",
