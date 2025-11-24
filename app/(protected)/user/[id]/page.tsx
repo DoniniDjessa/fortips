@@ -76,67 +76,56 @@ export default function UserProfilePage() {
         setUser(userData);
       }
 
-      // Get total predictions with probable_score (for exact score rate calculation)
-      const { data: exactScorePreds } = await supabase
-        .from("tip-predictions")
-        .select("id")
-        .eq("user_id", userId)
-        .not("probable_score", "is", null)
-        .in("status", ["success", "failed", "exact_success"]);
+      // Fetch ALL predictions for this user via API route (bypasses RLS)
+      const res = await fetch(`/api/user/predictions?user_id=${userId}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch user predictions");
+      }
+      const { data: allPredictions } = await res.json();
 
-      if (exactScorePreds) {
-        setTotalExactScorePredictions(exactScorePreds.length);
+      if (!allPredictions || allPredictions.length === 0) {
+        setLoading(false);
+        return;
       }
 
-      // Get today's predictions
-      const { data: todayPreds } = await supabase
-        .from("tip-predictions")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today)
-        .in("status", ["active", "waiting_result", "success", "failed", "exact_success"])
-        .order("time", { ascending: true });
+      // Calculate total predictions with probable_score (all statuses, not just completed)
+      const totalWithProbableScore = allPredictions.filter(
+        (p: Prediction) => p.probable_score !== null && p.probable_score !== undefined
+      ).length;
+      setTotalExactScorePredictions(totalWithProbableScore);
 
-      if (todayPreds) setTodayPredictions(todayPreds);
+      // Filter predictions by date and status
+      const todayPreds = allPredictions.filter(
+        (p: Prediction) => p.date === today && ["active", "waiting_result", "success", "failed", "exact_success"].includes(p.status)
+      ).sort((a: Prediction, b: Prediction) => a.time.localeCompare(b.time));
+      setTodayPredictions(todayPreds);
 
-      // Get upcoming predictions
-      const { data: upcomingPreds } = await supabase
-        .from("tip-predictions")
-        .select("*")
-        .eq("user_id", userId)
-        .gt("date", today)
-        .in("status", ["active", "waiting_result"])
-        .order("date", { ascending: true })
-        .order("time", { ascending: true })
-        .limit(20);
+      const upcomingPreds = allPredictions.filter(
+        (p: Prediction) => p.date > today && ["active", "waiting_result"].includes(p.status)
+      ).sort((a: Prediction, b: Prediction) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+      }).slice(0, 20);
+      setUpcomingPredictions(upcomingPreds);
 
-      if (upcomingPreds) setUpcomingPredictions(upcomingPreds);
-
-      // Get past predictions
-      const { data: pastPreds } = await supabase
-        .from("tip-predictions")
-        .select("*")
-        .eq("user_id", userId)
-        .lt("date", today)
-        .in("status", ["success", "failed", "exact_success", "waiting_result"])
-        .order("date", { ascending: false })
-        .order("time", { ascending: false })
-        .limit(20);
-
-      if (pastPreds) setPastPredictions(pastPreds);
+      const pastPreds = allPredictions.filter(
+        (p: Prediction) => p.date < today && ["success", "failed", "exact_success", "waiting_result"].includes(p.status)
+      ).sort((a: Prediction, b: Prediction) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        return b.time.localeCompare(a.time);
+      }).slice(0, 20);
+      setPastPredictions(pastPreds);
 
       // Get history (last 10 predictions regardless of date, ordered by created_at)
-      const { data: historyPreds } = await supabase
-        .from("tip-predictions")
-        .select("*")
-        .eq("user_id", userId)
-        .in("status", ["success", "failed", "exact_success", "active", "waiting_result"])
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (historyPreds) setHistoryPredictions(historyPreds);
+      const historyPreds = allPredictions
+        .filter((p: Prediction) => ["success", "failed", "exact_success", "active", "waiting_result"].includes(p.status))
+        .sort((a: Prediction, b: Prediction) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        .slice(0, 10);
+      setHistoryPredictions(historyPreds);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading user profile:", err);
     } finally {
       setLoading(false);
     }
@@ -349,78 +338,78 @@ export default function UserProfilePage() {
                 );
               })}
             </div>
-            
-            {/* History Section - Show under today's predictions */}
-            {activeTab === "today" && historyPredictions.length > 0 && (
-              <section className="falcon-shell space-y-4 mt-6">
-                <div>
-                  <span className="falcon-muted">{t(lang, "user.history")}</span>
-                  <h2 className="falcon-title">{t(lang, "user.lastPredictions")}</h2>
-                </div>
-                <div className="space-y-2">
-                  {historyPredictions.map((p) => {
-                    const isSuccess = p.result === "success" || p.result === "exact_success";
-                    const isFailed = p.result === "failed";
-                    const borderColor = isSuccess
-                      ? "border-green-300 dark:border-green-600"
-                      : isFailed
-                      ? "border-red-300 dark:border-red-600"
-                      : "border-slate-200/70 dark:border-slate-700/60";
-                    return (
-                    <article
-                      key={p.id}
-                      className={`rounded-xl border ${borderColor} bg-white/80 p-3 shadow-sm dark:bg-slate-900/60`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{p.match_name}</p>
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200/70 px-2 py-0.5 text-[9px] font-semibold text-slate-600 dark:border-slate-700/60 dark:text-slate-300">
-                              {p.odds.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-[9px] text-slate-500 dark:text-slate-400 mb-1">
-                            <span className="capitalize">{p.sport}</span>
-                            <CompetitionBadge code={p.competition} size="xs" />
-                            <span>{formatDate(p.date)} · {p.time}</span>
-                          </div>
-                          <p className="text-[10px] font-medium text-slate-700 dark:text-slate-200 mb-1">{p.prediction_text}</p>
-                          {p.probable_score && (
-                            <p className={`text-[9px] mb-1 ${
-                              p.result === "exact_success"
-                                ? "text-green-600 dark:text-green-400 font-semibold"
-                                : p.result === "failed" && p.status === "failed"
-                                ? "text-red-600 dark:text-red-400 font-semibold"
-                                : "text-slate-500 dark:text-slate-400"
-                            }`}>
-                              {t(lang, "home.probableScore")}: {p.probable_score}
-                            </p>
-                          )}
-                        </div>
-                        {p.result && (
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
-                              p.result === "success" || p.result === "exact_success"
-                                ? "border-[rgba(0,210,122,0.35)] bg-[rgba(0,210,122,0.12)] text-[#0f5132] dark:border-[rgba(0,210,122,0.45)] dark:bg-[rgba(0,210,122,0.2)] dark:text-[#adf8d1]"
-                                : "border-[rgba(230,55,87,0.35)] bg-[rgba(230,55,87,0.12)] text-[#c81f3f] dark:border-[rgba(230,55,87,0.45)] dark:bg-[rgba(230,55,87,0.2)] dark:text-[#f6a4b5]"
-                            }`}
-                          >
-                            {p.result === "success"
-                              ? `🏆 ${t(lang, "status.success")}`
-                              : p.result === "exact_success"
-                                ? `🏆🏆 ${t(lang, "status.exactSuccess")}`
-                                : t(lang, "status.failed")}
-                          </span>
-                        )}
-                      </div>
-                    </article>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </>
         )}
+
+      {/* History Section - Always visible, independent of tabs (like "mes pronostics" page) */}
+      {historyPredictions.length > 0 && (
+        <section className="falcon-shell space-y-4 mt-8">
+          <div>
+            <span className="falcon-muted">{t(lang, "user.history")}</span>
+            <h2 className="falcon-title">{t(lang, "user.lastPredictions")}</h2>
+          </div>
+          <div className="space-y-2">
+            {historyPredictions.map((p) => {
+              const isSuccess = p.result === "success" || p.result === "exact_success";
+              const isFailed = p.result === "failed";
+              const borderColor = isSuccess
+                ? "border-green-300 dark:border-green-600"
+                : isFailed
+                ? "border-red-300 dark:border-red-600"
+                : "border-slate-200/70 dark:border-slate-700/60";
+              return (
+                <article
+                  key={p.id}
+                  className={`rounded-xl border ${borderColor} bg-white/80 p-3 shadow-sm dark:bg-slate-900/60`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{p.match_name}</p>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200/70 px-2 py-0.5 text-[9px] font-semibold text-slate-600 dark:border-slate-700/60 dark:text-slate-300">
+                          {p.odds.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[9px] text-slate-500 dark:text-slate-400 mb-1">
+                        <span className="capitalize">{p.sport}</span>
+                        <CompetitionBadge code={p.competition} size="xs" />
+                        <span>{formatDate(p.date)} · {p.time}</span>
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-700 dark:text-slate-200 mb-1">{p.prediction_text}</p>
+                      {p.probable_score && (
+                        <p className={`text-[9px] mb-1 ${
+                          p.result === "exact_success"
+                            ? "text-green-600 dark:text-green-400 font-semibold"
+                            : p.result === "failed" && p.status === "failed"
+                            ? "text-red-600 dark:text-red-400 font-semibold"
+                            : "text-slate-500 dark:text-slate-400"
+                        }`}>
+                          {t(lang, "home.probableScore")}: {p.probable_score}
+                        </p>
+                      )}
+                    </div>
+                    {p.result && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
+                          p.result === "success" || p.result === "exact_success"
+                            ? "border-[rgba(0,210,122,0.35)] bg-[rgba(0,210,122,0.12)] text-[#0f5132] dark:border-[rgba(0,210,122,0.45)] dark:bg-[rgba(0,210,122,0.2)] dark:text-[#adf8d1]"
+                            : "border-[rgba(230,55,87,0.35)] bg-[rgba(230,55,87,0.12)] text-[#c81f3f] dark:border-[rgba(230,55,87,0.45)] dark:bg-[rgba(230,55,87,0.2)] dark:text-[#f6a4b5]"
+                        }`}
+                      >
+                        {p.result === "success"
+                          ? `🏆 ${t(lang, "status.success")}`
+                          : p.result === "exact_success"
+                            ? `🏆🏆 ${t(lang, "status.exactSuccess")}`
+                            : t(lang, "status.failed")}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
     </div>
   );
