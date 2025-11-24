@@ -32,6 +32,8 @@ type UserProfile = {
   success_rate: number | null;
   total_predictions: number | null;
   success_predictions: number | null;
+  exact_score_predictions: number | null;
+  avg_odds: number | null;
 };
 
 export default function UserProfilePage() {
@@ -40,6 +42,8 @@ export default function UserProfilePage() {
   const lang = useLang();
   const userId = params.id as string;
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [totalExactScorePredictions, setTotalExactScorePredictions] = useState<number>(0);
   const [todayPredictions, setTodayPredictions] = useState<Prediction[]>([]);
   const [upcomingPredictions, setUpcomingPredictions] = useState<Prediction[]>([]);
   const [pastPredictions, setPastPredictions] = useState<Prediction[]>([]);
@@ -54,15 +58,33 @@ export default function UserProfilePage() {
     try {
       const today = new Date().toISOString().split("T")[0];
 
+      // Get current user ID
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        setCurrentUserId(currentUser.id);
+      }
+
       // Get user profile
       const { data: userData } = await supabase
         .from("tip-users")
-        .select("id, pseudo, email, success_rate, total_predictions, success_predictions")
+        .select("id, pseudo, email, success_rate, total_predictions, success_predictions, exact_score_predictions, avg_odds")
         .eq("id", userId)
         .single();
 
       if (userData) {
         setUser(userData);
+      }
+
+      // Get total predictions with probable_score (for exact score rate calculation)
+      const { count: exactScoreTotal } = await supabase
+        .from("tip-predictions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("probable_score", "is", null)
+        .in("status", ["success", "failed", "exact_success"]);
+
+      if (exactScoreTotal !== null) {
+        setTotalExactScorePredictions(exactScoreTotal);
       }
 
       // Get today's predictions
@@ -157,14 +179,54 @@ export default function UserProfilePage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/predictions" className="falcon-pill-link">
-            {t(lang, "user.myPicks")}
-          </Link>
-          <Link href="/stats" className="falcon-pill-link">
-            {t(lang, "user.myStats")}
-          </Link>
-        </div>
+        {currentUserId === userId ? (
+          <div className="flex items-center gap-2">
+            <Link href="/predictions" className="falcon-pill-link">
+              {t(lang, "user.myPicks")}
+            </Link>
+            <Link href="/stats" className="falcon-pill-link">
+              {t(lang, "user.myStats")}
+            </Link>
+          </div>
+        ) : (
+          <div className="falcon-grid sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="falcon-mini-card">
+              <span className="falcon-muted">{t(lang, "stats.totalPicks")}</span>
+              <p className="mt-2 text-2xl font-semibold text-slate-800 dark:text-white">
+                {user.total_predictions || 0}
+              </p>
+            </div>
+            <div className="falcon-mini-card">
+              <span className="falcon-muted">{t(lang, "stats.wins")}</span>
+              <div className="mt-2 flex items-end justify-between">
+                <p className="text-2xl font-semibold text-[#0f5132] dark:text-[#adf8d1]">
+                  {user.success_predictions || 0}
+                </p>
+                {user.success_rate !== null && (
+                  <span className="falcon-chip-success">
+                    {user.success_rate.toFixed(1)}% {t(lang, "stats.rate")}
+                  </span>
+                )}
+              </div>
+            </div>
+            {user.exact_score_predictions !== null && (
+              <div className="falcon-mini-card">
+                <span className="falcon-muted">{t(lang, "stats.exactScores")}</span>
+                <p className="mt-2 text-2xl font-semibold text-[var(--color-falcon-primary)]">
+                  {user.exact_score_predictions || 0}/{totalExactScorePredictions || 0}
+                </p>
+              </div>
+            )}
+            {user.avg_odds !== null && user.avg_odds > 0 && (
+              <div className="falcon-mini-card">
+                <span className="falcon-muted">{t(lang, "stats.averageOdds")}</span>
+                <p className="mt-2 text-2xl font-semibold text-slate-800 dark:text-slate-100">
+                  {user.avg_odds.toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       <nav className="flex flex-wrap gap-2">

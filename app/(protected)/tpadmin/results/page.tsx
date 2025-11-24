@@ -65,10 +65,15 @@ export default function AdminResultsPage() {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const filtered = (data || []).filter((prediction: any) => {
+        // For active/waiting_result (pending results), show ALL regardless of date
+        if (prediction.status === "waiting_result" || prediction.status === "active") {
+          return true;
+        }
+
+        // For success/failed (completed results), only show if it's yesterday, today, or tomorrow
         const matchDate = getMatchDate(prediction.date, prediction.time);
         if (!matchDate) return false;
 
-        // Only show predictions for yesterday, today, or tomorrow
         const matchDateOnly = new Date(matchDate);
         matchDateOnly.setHours(0, 0, 0, 0);
 
@@ -76,15 +81,7 @@ export default function AdminResultsPage() {
         const isToday = matchDateOnly.getTime() === today.getTime();
         const isTomorrow = matchDateOnly.getTime() === tomorrow.getTime();
 
-        if (!isYesterday && !isToday && !isTomorrow) return false;
-
-        // For active/waiting_result, only show if match has passed
-        if (prediction.status === "waiting_result" || prediction.status === "active") {
-          return matchDate.getTime() <= Date.now();
-        }
-
-        // For success/failed, show if it's yesterday, today, or tomorrow
-        return true;
+        return isYesterday || isToday || isTomorrow;
       });
 
       setPredictions(filtered as Prediction[]);

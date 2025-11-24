@@ -179,21 +179,56 @@ export default function NewPredictionPage() {
         return;
       }
 
-      const { error } = await supabase.from("tip-predictions").insert({
-        user_id: userData.user.id,
-        sport: form.sport,
-        competition: form.competition,
-        match_name: form.match_name.trim(),
-        odds: parseFloat(form.odds),
-        probable_score: form.probable_score.trim() || null,
-        prediction_text: form.prediction_text.trim(),
-        details: form.details.trim() || null,
-        date: form.date,
-        time: form.time,
-        status: "pending_validation",
-      });
+      const { data: insertedData, error } = await supabase
+        .from("tip-predictions")
+        .insert({
+          user_id: userData.user.id,
+          sport: form.sport,
+          competition: form.competition,
+          match_name: form.match_name.trim(),
+          odds: parseFloat(form.odds),
+          probable_score: form.probable_score.trim() || null,
+          prediction_text: form.prediction_text.trim(),
+          details: form.details.trim() || null,
+          date: form.date,
+          time: form.time,
+          status: "pending_validation",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Get user info for email
+      const { data: userInfo } = await supabase
+        .from("tip-users")
+        .select("pseudo, email")
+        .eq("id", userData.user.id)
+        .single();
+
+      // Send email notification (don't block on error)
+      if (insertedData) {
+        fetch("/api/notifications/new-prediction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userPseudo: userInfo?.pseudo || null,
+            userEmail: userInfo?.email || null,
+            sport: form.sport,
+            competition: form.competition,
+            matchName: form.match_name.trim(),
+            date: form.date,
+            time: form.time,
+            odds: parseFloat(form.odds),
+            predictionText: form.prediction_text.trim(),
+            probableScore: form.probable_score.trim() || null,
+            details: form.details.trim() || null,
+          }),
+        }).catch((err) => {
+          console.error("Failed to send email notification:", err);
+          // Don't show error to user, email is not critical
+        });
+      }
 
       toast.success(t(lang, "newPrediction.predictionCreated"));
       router.push("/predictions");

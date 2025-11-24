@@ -275,7 +275,7 @@ export default function ProtectedHome() {
         </div>
       </div>
 
-      <section className="falcon-grid md:grid-cols-2 xl:grid-cols-4">
+      <section className="falcon-grid md:grid-cols-2 xl:grid-cols-3">
         <div className="falcon-mini-card">
           <span className="falcon-muted">{t(lang, "home.todaysPicks")}</span>
           <div className="mt-2 flex items-end justify-between">
@@ -310,20 +310,6 @@ export default function ProtectedHome() {
           </div>
         </div>
         <div className="falcon-mini-card">
-          <span className="falcon-muted">{t(lang, "home.adminCombo")}</span>
-          <div className="mt-2 flex items-end justify-between">
-            <p className="text-2xl font-semibold text-slate-800 dark:text-white">
-              {adminCoupon.length ? adminTotalOdds.toFixed(2) : "—"}
-            </p>
-            <span className="falcon-chip">
-              <svg className="h-3.5 w-3.5 text-[var(--color-falcon-primary)]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2 3 8l9 6 9-6-9-6Zm0 9.743L5.18 7.14l-2.18 1.455L12 13.97l8.998-5.376L18.82 7.14 12 11.743Z" />
-              </svg>
-              {t(lang, "home.premium")}
-            </span>
-          </div>
-        </div>
-        <div className="falcon-mini-card">
           <span className="falcon-muted">{t(lang, "home.avgSuccess")}</span>
           <div className="mt-2 flex items-end justify-between">
             <p className="text-2xl font-semibold text-slate-800 dark:text-white">
@@ -341,57 +327,7 @@ export default function ProtectedHome() {
         </div>
       </section>
 
-      <section className="falcon-grid lg:grid-cols-2">
-        {adminCoupon.length > 0 && (
-          <div className="falcon-shell space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="falcon-muted">{t(lang, "home.editorialPick")}</span>
-                <h2 className="falcon-title">{t(lang, "home.adminCoupon")}</h2>
-              </div>
-              <span className="falcon-chip">
-                {t(lang, "home.totalOdds")} {adminTotalOdds.toFixed(2)}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {adminCoupon.map((p) => {
-                const userName = p.tip_users?.pseudo || p.tip_users?.email || "Admin";
-                return (
-                  <article key={p.id} className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-3 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <Link
-                          href={`/user/${p.user_id}`}
-                          className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-falcon-primary)]"
-                        >
-                          @{userName}
-                        </Link>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{p.match_name}</p>
-                        <div className="flex flex-wrap items-center gap-2 text-[9px] text-slate-500 dark:text-slate-400">
-                          <span className="capitalize">{p.sport}</span>
-                          <CompetitionBadge code={p.competition} size="xs" />
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-700 dark:text-white">{p.prediction_text}</p>
-                        {p.probable_score && (
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {t(lang, "home.projectedScore")}: {p.probable_score}
-                          </p>
-                        )}
-                      </div>
-                      <div className="min-w-[80px] text-right">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-white">{p.odds.toFixed(2)}</p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                          {formatDate(p.date)} · {p.time}
-                        </p>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
+      <section className="falcon-grid lg:grid-cols-1">
         {bestUsersCoupon && bestUsersCoupon.predictions.length > 0 && (
           <div className="falcon-shell space-y-4">
             <div className="flex items-center justify-between">
