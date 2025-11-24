@@ -172,18 +172,16 @@ export default function ProtectedHome() {
         setAdminCoupon(adminOnly as Prediction[]);
       }
 
-      // Get random best users' predictions (coupon of 5 predictions from 5 random best users)
-      const { data: bestUsers } = await supabase
+      // Get random users' predictions (coupon of up to 5 predictions from random users)
+      // Show for all users, not just those with high success rates
+      const { data: allUsers } = await supabase
         .from("tip-users")
         .select("id, pseudo, email, success_rate, total_predictions, avg_odds, exact_score_predictions")
-        .not("success_rate", "is", null)
-        .gt("success_rate", 60)
-        .order("success_rate", { ascending: false })
-        .limit(20);
+        .limit(50);
 
-      if (bestUsers && bestUsers.length > 0) {
-        // Pick 5 random users
-        const shuffled = [...bestUsers].sort(() => 0.5 - Math.random());
+      if (allUsers && allUsers.length > 0) {
+        // Pick up to 5 random users
+        const shuffled = [...allUsers].sort(() => 0.5 - Math.random());
         const selectedUsers = shuffled.slice(0, 5);
 
         // Get one active prediction from each selected user
@@ -533,9 +531,9 @@ export default function ProtectedHome() {
                     </p>
                     {p.probable_score && (
                       <p className={`text-[10px] ${
-                        isSuccess
+                        p.result === "exact_success"
                           ? "text-green-600 dark:text-green-400 font-semibold"
-                          : isFailed
+                          : p.result === "failed" && p.status === "failed"
                           ? "text-red-600 dark:text-red-400 font-semibold"
                           : "text-slate-500 dark:text-slate-400"
                       }`}>

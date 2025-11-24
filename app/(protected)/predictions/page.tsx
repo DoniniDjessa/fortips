@@ -223,7 +223,13 @@ export default function PredictionsPage() {
                       {p.prediction_text}
                     </p>
                     {p.probable_score && (
-                      <p className={`text-[10px] font-medium ${statusInfo.tone}`}>
+                      <p className={`text-[10px] font-medium ${
+                        p.result === "exact_success"
+                          ? "text-green-600 dark:text-green-400"
+                          : p.result === "failed" && p.status === "failed"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}>
                         {t(lang, "home.probableScore")}: {p.probable_score}
                       </p>
                     )}
