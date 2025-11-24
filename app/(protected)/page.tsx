@@ -132,25 +132,16 @@ export default function ProtectedHome() {
 
       const mappedPredictions = (windowPreds as Prediction[] | null) ?? [];
 
-      // Group all active predictions by date
+      // Group ALL predictions by date (regardless of status: active, success, failed, etc.)
+      // Only show predictions for yesterday, today, and tomorrow - ignore older predictions
       mappedPredictions.forEach((prediction) => {
         const key = getDayKey(prediction.date, { yesterday, today, tomorrow });
         if (key) {
+          // Only add predictions that match exactly yesterday, today, or tomorrow
           grouped[key].push(prediction);
-        } else {
-          // If prediction is older than yesterday, add to yesterday
-          // If prediction is newer than tomorrow, add to tomorrow
-          const predDate = new Date(prediction.date);
-          const yesterdayDate = new Date(yesterday);
-          const tomorrowDate = new Date(tomorrow);
-          if (predDate < yesterdayDate) {
-            grouped.yesterday.push(prediction);
-          } else if (predDate > tomorrowDate) {
-            grouped.tomorrow.push(prediction);
-          } else {
-            grouped.today.push(prediction);
-          }
         }
+        // Ignore predictions that don't match yesterday, today, or tomorrow
+        // This ensures "yesterday" only shows predictions from yesterday's date, not older ones
       });
 
       setDailyPredictions(grouped);
@@ -240,10 +231,11 @@ export default function ProtectedHome() {
     );
   }
 
+  // Count active predictions for stats, but show all predictions (active, success, failed) in the feed
   const todayActivePredictions = dailyPredictions.today.filter((prediction) => prediction.status === "active");
-  const totalToday = todayActivePredictions.length;
-  const averageOdds = totalToday
-    ? todayActivePredictions.reduce((acc, prediction) => acc + (prediction.odds || 0), 0) / totalToday
+  const totalToday = dailyPredictions.today.length; // Show total count of all today's predictions
+  const averageOdds = dailyPredictions.today.length
+    ? dailyPredictions.today.reduce((acc, prediction) => acc + (prediction.odds || 0), 0) / dailyPredictions.today.length
     : 0;
   const adminTotalOdds = adminCoupon.length
     ? adminCoupon.reduce((acc, prediction) => acc * (prediction.odds || 1), 1)

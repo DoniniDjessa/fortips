@@ -3,17 +3,17 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(req: NextRequest) {
   try {
-    // Fetch ALL predictions (active, success, failed, waiting_result) for the feed
-    // This bypasses RLS so all users can see all predictions grouped by date
+    // Fetch ALL waiting_result predictions from ALL users
+    // This bypasses RLS using service role so admin can see all pending results
     const { data: predictionsData, error: predictionsError } = await supabaseAdmin
       .from("tip-predictions")
       .select("*")
-      .in("status", ["active", "success", "failed", "waiting_result", "exact_success"])
+      .eq("status", "waiting_result")
       .order("date", { ascending: true })
       .order("time", { ascending: true });
 
     if (predictionsError) {
-      console.error("Error fetching active predictions:", predictionsError);
+      console.error("Error fetching waiting results:", predictionsError);
       return NextResponse.json({ error: predictionsError.message }, { status: 500 });
     }
 
@@ -28,21 +28,15 @@ export async function GET(req: NextRequest) {
     if (userIds.length > 0) {
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from("tip-users")
-        .select("id, pseudo, email, role, success_rate, total_predictions, avg_odds, exact_score_predictions")
+        .select("id, pseudo, email")
         .in("id", userIds);
 
       if (!usersError && usersData) {
         usersMap = new Map((usersData || []).map((u: any) => [
           u.id,
           {
-            id: u.id,
             pseudo: u.pseudo,
             email: u.email,
-            role: u.role,
-            success_rate: u.success_rate,
-            total_predictions: u.total_predictions,
-            avg_odds: u.avg_odds,
-            exact_score_predictions: u.exact_score_predictions,
           },
         ]));
       }
@@ -56,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data: combinedData });
   } catch (e: any) {
-    console.error("Server error in active predictions API:", e);
+    console.error("Server error in waiting results API:", e);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

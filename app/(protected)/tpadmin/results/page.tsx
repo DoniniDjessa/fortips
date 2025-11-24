@@ -44,57 +44,23 @@ export default function AdminResultsPage() {
 
   const loadPredictions = async () => {
     try {
-      const { data, error } = await supabase
-        .from("tip-predictions")
-        .select(
-          `*,
-          tip_users:"tip-users"(pseudo,email)`
-        )
-        .in("status", ["waiting_result", "active", "success", "failed"])
-        .order("date", { ascending: true })
-        .order("time", { ascending: true });
+      // Fetch ALL waiting_result predictions from ALL users via API route (bypasses RLS)
+      const res = await fetch("/api/admin/waiting-results");
+      if (!res.ok) {
+        throw new Error("Failed to fetch waiting results");
+      }
+      const { data } = await res.json();
 
-      if (error) throw error;
-
-      // Get yesterday, today, and tomorrow dates
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const filtered = (data || []).filter((prediction: any) => {
-        // For active/waiting_result (pending results), show ALL regardless of date
-        if (prediction.status === "waiting_result" || prediction.status === "active") {
-          return true;
-        }
-
-        // For success/failed (completed results), only show if it's yesterday, today, or tomorrow
-        const matchDate = getMatchDate(prediction.date, prediction.time);
-        if (!matchDate) return false;
-
-        const matchDateOnly = new Date(matchDate);
-        matchDateOnly.setHours(0, 0, 0, 0);
-
-        const isYesterday = matchDateOnly.getTime() === yesterday.getTime();
-        const isToday = matchDateOnly.getTime() === today.getTime();
-        const isTomorrow = matchDateOnly.getTime() === tomorrow.getTime();
-
-        return isYesterday || isToday || isTomorrow;
-      });
-
-      setPredictions(filtered as Prediction[]);
+      // Show ALL waiting_result predictions regardless of date or user
+      setPredictions((data || []) as Prediction[]);
       
-      // Initialize action states for predictions that need both actions
+      // Initialize action states for all predictions
       const newActionStates: Record<string, PredictionActionState> = {};
-      filtered.forEach((p: Prediction) => {
-        if (p.status === "waiting_result" || p.status === "active") {
-          newActionStates[p.id] = {
-            resultAction: null,
-            exactScoreAction: null,
-          };
-        }
+      (data || []).forEach((p: Prediction) => {
+        newActionStates[p.id] = {
+          resultAction: null,
+          exactScoreAction: null,
+        };
       });
       setActionStates(newActionStates);
     } catch (err: any) {
