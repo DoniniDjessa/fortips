@@ -8,17 +8,57 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const stored = typeof window !== "undefined" ? localStorage.getItem("theme") : null;
-    const prefersDark = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldDark = stored ? stored === "dark" : prefersDark;
-    document.documentElement.classList.toggle("dark", shouldDark);
-    setIsDark(shouldDark);
+    
+    // Get initial theme
+    const getTheme = () => {
+      const stored = localStorage.getItem("theme");
+      if (stored) {
+        return stored === "dark";
+      }
+      // If no stored preference, use system preference
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    };
+
+    const updateTheme = (dark: boolean) => {
+      setIsDark(dark);
+      document.documentElement.classList.toggle("dark", dark);
+    };
+
+    // Set initial theme
+    const shouldDark = getTheme();
+    updateTheme(shouldDark);
+
+    // Listen for system preference changes (only if no manual preference is set)
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      // Only update if user hasn't manually set a preference
+      if (!localStorage.getItem("theme")) {
+        updateTheme(e.matches);
+      }
+    };
+
+    // Modern browsers
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleSystemThemeChange);
+    } else {
+      // Fallback for older browsers
+      mediaQuery.addListener(handleSystemThemeChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", handleSystemThemeChange);
+      } else {
+        mediaQuery.removeListener(handleSystemThemeChange);
+      }
+    };
   }, []);
 
   const toggle = () => {
     const next = !isDark;
     setIsDark(next);
     document.documentElement.classList.toggle("dark", next);
+    // Store manual preference (this overrides system preference)
     localStorage.setItem("theme", next ? "dark" : "light");
   };
 
